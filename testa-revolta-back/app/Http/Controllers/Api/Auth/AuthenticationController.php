@@ -9,7 +9,8 @@ use Illuminate\Support\Facades\Auth;
 
 class AuthenticationController extends Controller
 {
-    public function login(Request $request) {
+    public function login(Request $request)
+    {
         $this->validate($request, [
             'email' => 'required|max:255',
             'password' => 'required'
@@ -17,7 +18,7 @@ class AuthenticationController extends Controller
 
         $login = $request->only('email', 'password');
 
-        if(!Auth::attempt($login)) {
+        if (!Auth::attempt($login)) {
             return response(['message' => 'Invalid login credentials'], 401);
         }
 
@@ -26,7 +27,7 @@ class AuthenticationController extends Controller
          */
         $user = Auth::user();
         $token = $user->createToken($user->name);
-        
+
         return response([
             'id' => $user->id,
             'name' => $user->name,
@@ -37,5 +38,26 @@ class AuthenticationController extends Controller
             'token_expires_at' => $token->token->expires_at,
 
         ], 200);
+    }
+
+    public function logout(Request $request)
+    {
+        $this->validate($request, [
+            'allDevices' => 'required|boolean'
+        ]);
+
+        $user = Auth::user();
+
+        if ($request->allDevice) {
+            $user->tokens->each(function ($token) {
+                $token->delete();
+            });
+
+            return response(['message' => 'Logged out from all devices', 200]);
+        } else {
+            $userToken = $user->token();
+            $userToken->delete();
+            return response(['message' => 'Logged out ', 200]);
+        }
     }
 }
